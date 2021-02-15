@@ -45,6 +45,7 @@ module Fluent
   module ServerModule
     def before_run
       @fluentd_conf = config[:fluentd_conf]
+      @rpc_endpoint = nil
       @rpc_server = nil
       @counter = nil
 
@@ -64,9 +65,13 @@ module Fluent
         run_counter_server(counter)
       end
 
-      socket_manager_path = ServerEngine::SocketManager::Server.generate_path
-      ServerEngine::SocketManager::Server.open(socket_manager_path)
-      ENV['SERVERENGINE_SOCKETMANAGER_PATH'] = socket_manager_path.to_s
+      if config[:disable_shared_socket]
+        $log.info "shared socket for multiple workers is disabled"
+      else
+        socket_manager_path = ServerEngine::SocketManager::Server.generate_path
+        ServerEngine::SocketManager::Server.open(socket_manager_path)
+        ENV['SERVERENGINE_SOCKETMANAGER_PATH'] = socket_manager_path.to_s
+      end
     end
 
     def after_run
@@ -366,6 +371,7 @@ module Fluent
         config_path: path,
         main_cmd: params['main_cmd'],
         signame: params['signame'],
+        disable_shared_socket: params['disable_shared_socket']
       }
       if daemonize
         se_config[:pid_path] = pid_path
@@ -481,7 +487,8 @@ module Fluent
         supervise: true,
         standalone_worker: false,
         signame: nil,
-        conf_encoding: 'utf-8'
+        conf_encoding: 'utf-8',
+        disable_shared_socket: nil
       }
     end
 
@@ -709,6 +716,7 @@ module Fluent
         'counter_server' => @system_config.counter_server,
         'log_format' => @system_config.log.format,
         'log_time_format' => @system_config.log.time_format,
+        'disable_shared_socket' => @system_config.disable_shared_socket
       }
 
       se = ServerEngine.create(ServerModule, WorkerModule){
