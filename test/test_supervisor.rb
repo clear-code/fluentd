@@ -430,6 +430,7 @@ class SupervisorTest < ::Test::Unit::TestCase
     begin
       ENV.delete('SERVERENGINE_SOCKETMANAGER_PATH')
       server.before_run
+      sleep 0.1 if Fluent.windows? # Wait for starting windows event thread
       assert_not_nil(ENV['SERVERENGINE_SOCKETMANAGER_PATH'])
     ensure
       server.after_run
@@ -447,6 +448,7 @@ class SupervisorTest < ::Test::Unit::TestCase
     begin
       ENV.delete('SERVERENGINE_SOCKETMANAGER_PATH')
       server.before_run
+      sleep 0.1 if Fluent.windows? # Wait for starting windows event thread
       assert_nil(ENV['SERVERENGINE_SOCKETMANAGER_PATH'])
     ensure
       server.after_run
